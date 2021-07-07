@@ -15,7 +15,7 @@ import {alarmTestUtil} from '../../../../test/testHelpers';
 import {mockAlert, mockRuleInterface} from '../../../../test/testData';
 import type {AlertViewerProps} from '../../../rules/RuleInterface';
 
-const {AlarmsWrapper} = alarmTestUtil();
+const {apiUtil, AlarmsWrapper} = alarmTestUtil();
 const commonProps = {
   alert: mockAlert({labels: {alertname: '<<test alert>>'}}),
   onClose: jest.fn(),
@@ -69,6 +69,20 @@ describe('Basics', () => {
     expect(getByText(/testAnnotation/i)).toBeInTheDocument();
     expect(getByText(/testValue/i)).toBeInTheDocument();
   });
+});
+
+test('shows troubleshooting link', () => {
+  const alert = mockAlert({labels: {testLabel: 'testValue'}});
+  jest.spyOn(apiUtil, 'getTroubleshootingLink').mockReturnValue({
+    link: 'www.example.com',
+    title: 'View troubleshooting documentation',
+  });
+  const {getByText} = render(
+    <AlarmsWrapper>
+      <AlertDetailsPane {...commonProps} alert={alert} />
+    </AlarmsWrapper>,
+  );
+  expect(getByText(/View troubleshooting documentation/i)).toBeInTheDocument();
 });
 
 describe('Alert type selection', () => {
