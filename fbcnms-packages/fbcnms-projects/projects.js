@@ -42,6 +42,12 @@ const allTabs: $ReadOnlyArray<ProjectLink> = [
     secondary: 'Network Hub',
     url: '/hub',
   },
+  {
+    id: 'assurance',
+    name: 'Assurance',
+    secondary: 'Network Assurance',
+    url: '/assurance',
+  },
 ];
 
 const ADMIN: ProjectLink = {
