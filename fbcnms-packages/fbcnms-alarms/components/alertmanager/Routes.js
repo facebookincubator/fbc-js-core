@@ -7,12 +7,11 @@
  * @flow strict-local
  * @format
  */
-
 import CircularProgress from '@material-ui/core/CircularProgress';
 import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
 import React from 'react';
-import SimpleTable, {toLabels} from '../table/SimpleTable';
+import SimpleTable, {LabelsCell, toLabels} from '../table/SimpleTable';
 import TableActionDialog from '../table/TableActionDialog';
 import {makeStyles} from '@material-ui/styles';
 import {useAlarmContext} from '../AlarmContext';
@@ -28,7 +27,6 @@ const useStyles = makeStyles(() => ({
     justifyContent: 'center',
   },
 }));
-
 export default function Routes() {
   const {apiUtil} = useAlarmContext();
   const [menuAnchorEl, setMenuAnchorEl] = useState<?HTMLElement>(null);
@@ -65,22 +63,29 @@ export default function Routes() {
   return (
     <>
       <SimpleTable
-        tableData={routesList}
-        onActionsClick={(alert, target) => {
-          setMenuAnchorEl(target);
-          setCurrentRow(alert);
-        }}
+        onRowClick={row => setCurrentRow(row)}
         columnStruct={[
-          {title: 'name', getValue: row => row.receiver},
+          {title: 'name', field: 'receiver'},
           {
             title: 'group by',
-            getValue: row => row.group_by || [],
-            render: 'list',
+            field: 'group_by',
+            render: row => row.group_by?.join(','),
           },
           {
             title: 'match',
-            getValue: row => (row.match ? toLabels(row.match) : {}),
-            render: 'labels',
+            field: 'match',
+            render: row => {
+              const labels = toLabels(row.match);
+              return <LabelsCell value={labels} />;
+            },
+          },
+        ]}
+        tableData={routesList || []}
+        data-testid="routes"
+        menuItems={[
+          {
+            name: 'View',
+            handleFunc: () => onDialogAction('view'),
           },
         ]}
       />

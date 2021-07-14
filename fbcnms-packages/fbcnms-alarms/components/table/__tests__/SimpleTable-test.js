@@ -10,10 +10,10 @@
 
 import * as React from 'react';
 import MuiStylesThemeProvider from '@material-ui/styles/ThemeProvider';
-import SimpleTable from '../SimpleTable';
+import SimpleTable, {LabelsCell} from '../SimpleTable';
 import defaultTheme from '../../../theme/default';
 import {MuiThemeProvider} from '@material-ui/core/styles';
-import {act, fireEvent, render} from '@testing-library/react';
+import {render} from '@testing-library/react';
 
 afterEach(() => {
   jest.resetAllMocks();
@@ -44,6 +44,13 @@ test('renders with required default props', () => {
   expect(getByText('age')).toBeInTheDocument();
 });
 
+function mockColumns() {
+  return [
+    {title: 'name', field: 'name'},
+    {title: 'age', field: 'age'},
+  ];
+}
+
 test('rendered row is transformed by path expression', () => {
   const rows = [
     {
@@ -64,8 +71,8 @@ test('rendered row is transformed by path expression', () => {
     <Wrapper>
       <SimpleTable
         columnStruct={[
-          {title: 'name', getValue: x => x.name},
-          {title: 'description', getValue: row => row.labels?.description},
+          {title: 'name', field: 'name'},
+          {title: 'description', field: 'labels.description'},
         ]}
         tableData={rows}
       />
@@ -80,40 +87,21 @@ test('rendered row is transformed by path expression', () => {
   expect(getByText('mary description')).toBeInTheDocument();
 });
 
-test('if onActionsClick is not passed, no actions menu is rendered', () => {
-  const {queryByLabelText, queryByText} = render(
+test('if menuItems is passed, actions menu is rendered', () => {
+  const {getAllByTitle} = render(
     <Wrapper>
       <SimpleTable
         columnStruct={mockColumns()}
         tableData={[{name: 'name', age: 'age'}]}
+        menuItems={[
+          {
+            name: 'View',
+          },
+        ]}
       />
     </Wrapper>,
   );
-  expect(queryByLabelText(/Action Menu/i)).not.toBeInTheDocument();
-  // table column should also not be rendered
-  expect(queryByText('actions')).not.toBeInTheDocument();
-});
-
-test('if onActionsClick is passed, actions menu is rendered', () => {
-  const actionsMenuMock = jest.fn();
-  const {getByLabelText, getByTestId} = render(
-    <Wrapper>
-      <SimpleTable
-        columnStruct={mockColumns()}
-        tableData={[{name: 'name', age: 'age'}]}
-        onActionsClick={actionsMenuMock}
-      />
-    </Wrapper>,
-  );
-  const button = getByLabelText(/Action Menu/i);
-  expect(button).toBeInTheDocument();
-  act(() => {
-    fireEvent.click(button);
-  });
-  // clicking the actions menu button should invoke onActionsClick
-  expect(actionsMenuMock).toHaveBeenCalled();
-  // expect the actions column to exist
-  expect(getByTestId('action-menu')).toBeInTheDocument();
+  expect(getAllByTitle('Actions')[0]).toBeInTheDocument();
 });
 
 describe('column renderers', () => {
@@ -122,7 +110,11 @@ describe('column renderers', () => {
       <Wrapper>
         <SimpleTable
           columnStruct={[
-            {title: 'labels', getValue: row => row.labels, render: 'labels'},
+            {
+              title: 'labels',
+              field: 'labels',
+              render: row => <LabelsCell value={row.labels} />,
+            },
           ]}
           tableData={[{labels: {name: 'name', age: 'age'}}]}
         />
@@ -143,47 +135,4 @@ describe('column renderers', () => {
     expect(textContent).toContain('name=name');
     expect(textContent).toContain('age=age');
   });
-
-  test('if column render is "severity", severity cell is rendered', () => {
-    const {getByText} = render(
-      <Wrapper>
-        <SimpleTable
-          columnStruct={[
-            {
-              title: 'severity',
-              getValue: row => row.severity,
-              render: 'severity',
-            },
-          ]}
-          tableData={[{severity: 'minor'}, {severity: 'major'}]}
-        />
-      </Wrapper>,
-    );
-    expect(getByText('major')).toBeInTheDocument();
-    expect(getByText('minor')).toBeInTheDocument();
-  });
-
-  test('if column render is "chip", chip cell is rendered', () => {
-    const {container} = render(
-      <Wrapper>
-        <SimpleTable
-          columnStruct={[
-            {title: 'type', getValue: row => row.type, render: 'chip'},
-          ]}
-          tableData={[{type: 'slack'}, {type: 'pagerduty'}]}
-        />
-      </Wrapper>,
-    );
-    expect(container.querySelector('[data-chip="slack"]')).toBeInTheDocument();
-    expect(
-      container.querySelector('[data-chip="pagerduty"]'),
-    ).toBeInTheDocument();
-  });
 });
-
-function mockColumns() {
-  return [
-    {title: 'name', getValue: row => row.name},
-    {title: 'age', getValue: row => row.age},
-  ];
-}

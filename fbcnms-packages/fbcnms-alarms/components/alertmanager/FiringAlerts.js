@@ -7,21 +7,19 @@
  * @flow strict-local
  * @format
  */
-
 import AddAlertTwoToneIcon from '@material-ui/icons/AddAlertTwoTone';
 import AlertDetailsPane from './AlertDetails/AlertDetailsPane';
 import Button from '@material-ui/core/Button';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import Grid from '@material-ui/core/Grid';
 import React from 'react';
+import SeverityIndicator from '../severity/SeverityIndicator';
 import SimpleTable from '../table/SimpleTable';
 import Slide from '@material-ui/core/Slide';
 import Typography from '@material-ui/core/Typography';
 import moment from 'moment';
 import useRouter from '@fbcnms/ui/hooks/useRouter';
 import {Link} from 'react-router-dom';
-import {SEVERITY} from '../severity/Severity';
-import {get} from 'lodash';
 import {makeStyles} from '@material-ui/styles';
 import {useAlarmContext} from '../AlarmContext';
 import {useEffect, useState} from 'react';
@@ -160,52 +158,35 @@ export default function FiringAlerts(props: Props) {
           columnStruct={[
             {
               title: 'name',
-              getValue: x => x.labels?.alertname,
-              renderFunc: data => {
-                const entity =
-                  data.labels.entity || data.labels.nodeMac || null;
-                return (
-                  <>
-                    <Typography variant="body1">
-                      {data.labels?.alertname}
-                    </Typography>
-                    {entity && (
-                      <Typography variant="body2">{entity}</Typography>
-                    )}
-                  </>
-                );
-              },
+              field: 'labels.alertname',
+              render: currRow => (
+                <Typography noWrap>
+                  <span>{currRow.labels?.alertname}</span>
+                </Typography>
+              ),
             },
             {
               title: 'severity',
-              getValue: x => x.labels?.severity,
-              render: 'severity',
+              field: 'labels.severity',
+              render: currRow => (
+                <SeverityIndicator severity={currRow.labels?.severity} />
+              ),
             },
             {
               title: 'date',
-              getValue: x => x.startsAt,
-              renderFunc: (data, classes) => {
-                const date = moment(new Date(data.startsAt));
+              field: 'startsAt',
+              render: currRow => {
+                const date = moment(new Date(currRow.startsAt));
                 return (
                   <>
                     <Typography variant="body1">{date.fromNow()}</Typography>
-
-                    <div className={classes.secondaryItalicCell}>
-                      {date.format('dddd, MMMM Do YYYY')}
-                    </div>
+                    <div>{date.format('dddd, MMMM Do YYYY')}</div>
                   </>
                 );
               },
             },
           ]}
           tableData={alertData || []}
-          sortFunc={alert =>
-            get(
-              SEVERITY,
-              [get(alert, ['labels', 'severity']).toLowerCase(), 'index'],
-              undefined,
-            )
-          }
           data-testid="firing-alerts"
         />
         {isLoading && (

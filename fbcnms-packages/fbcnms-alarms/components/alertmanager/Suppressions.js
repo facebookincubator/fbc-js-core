@@ -7,12 +7,11 @@
  * @flow strict-local
  * @format
  */
-
 import CircularProgress from '@material-ui/core/CircularProgress';
 import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
 import React from 'react';
-import SimpleTable, {toLabels} from '../table/SimpleTable';
+import SimpleTable, {MultiGroupsCell, toLabels} from '../table/SimpleTable';
 import TableActionDialog from '../table/TableActionDialog';
 import {makeStyles} from '@material-ui/styles';
 import {useAlarmContext} from '../AlarmContext';
@@ -67,22 +66,28 @@ export default function Suppressions() {
   return (
     <>
       <SimpleTable
-        tableData={silencesList}
-        onActionsClick={(alert, target) => {
-          setMenuAnchorEl(target);
-          setCurrentRow(alert);
-        }}
+        onRowClick={row => setCurrentRow(row)}
         columnStruct={[
-          {title: 'name', getValue: row => row.comment || ''},
-          {title: 'active', getValue: row => row.status?.state ?? ''},
-          {title: 'created by', getValue: row => row.createdBy},
+          {title: 'name', field: 'comment'},
+          {title: 'active', field: 'status.state'},
+          {title: 'created by', field: 'createdBy'},
           {
             title: 'matchers',
-            getValue: row =>
-              row.matchers
+            field: 'matchers',
+            render: row => {
+              const value = row.matchers
                 ? row.matchers.map(matcher => toLabels(matcher))
-                : [],
-            render: 'multipleGroups',
+                : [];
+              return <MultiGroupsCell value={value} />;
+            },
+          },
+        ]}
+        tableData={silencesList || []}
+        data-testid="suppresions"
+        menuItems={[
+          {
+            name: 'View',
+            handleFunc: () => setShowDialog(true),
           },
         ]}
       />

@@ -9,33 +9,35 @@
  */
 
 import * as React from 'react';
-import Button from '@material-ui/core/Button';
+import AddBox from '@material-ui/icons/AddBox';
+import ArrowDownward from '@material-ui/icons/ArrowDownward';
+import Check from '@material-ui/icons/Check';
+import ChevronLeft from '@material-ui/icons/ChevronLeft';
+import ChevronRight from '@material-ui/icons/ChevronRight';
 import Chip from '@material-ui/core/Chip';
+import Clear from '@material-ui/icons/Clear';
+import DeleteOutline from '@material-ui/icons/DeleteOutline';
+import Edit from '@material-ui/icons/Edit';
+import FilterList from '@material-ui/icons/FilterList';
+import FirstPage from '@material-ui/icons/FirstPage';
+import LastPage from '@material-ui/icons/LastPage';
+import MaterialTable from 'material-table';
+import Menu from '@material-ui/core/Menu';
+import MenuItem from '@material-ui/core/MenuItem';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
-import Paper from '@material-ui/core/Paper';
-import SeverityIndicator from '../severity/SeverityIndicator';
-import Table from '@material-ui/core/Table';
-import TableBody from '@material-ui/core/TableBody';
-import TableCell from '@material-ui/core/TableCell';
-import TableHead from '@material-ui/core/TableHead';
-import TableRow from '@material-ui/core/TableRow';
+import RefreshIcon from '@material-ui/icons/Refresh';
+import Remove from '@material-ui/icons/Remove';
+import SaveAlt from '@material-ui/icons/SaveAlt';
+import Search from '@material-ui/icons/Search';
+import {forwardRef} from 'react';
 import {makeStyles} from '@material-ui/styles';
-import {withStyles} from '@material-ui/core/styles';
+import {useState} from 'react';
 
 const useStyles = makeStyles(theme => ({
   labelChip: {
     backgroundColor: theme.palette.grey[50],
     color: theme.palette.secondary.main,
     margin: '5px',
-  },
-  titleCell: {
-    marginBottom: 2,
-  },
-  secondaryCell: {
-    color: theme.palette.text.primary,
-  },
-  secondaryChip: {
-    color: theme.palette.secondary.main,
   },
   ellipsisChip: {
     display: 'block',
@@ -44,116 +46,122 @@ const useStyles = makeStyles(theme => ({
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
-  selectableRowHover: {
-    cursor: 'pointer',
-  },
-  darkRow: {
-    backgroundColor: theme.palette.grey[100],
-  },
-  lightRow: {
-    backgroundColor: 'white',
-  },
 }));
 
-const HeadTableCell = withStyles({
-  root: {
-    fontSize: '12px',
-    color: 'gray',
-    textTransform: 'capitalize',
-    marginLeft: 5,
-  },
-})(TableCell);
-
-const BodyTableCell = withStyles({
-  root: {
-    fontSize: '14px',
-    marginLeft: 5,
-  },
-})(TableCell);
-
-type RenderCellProps<TRow> = {
-  row: TRow,
-  rowIdx: number,
-  column: ColumnData<TRow>,
-  columnIdx: number,
-  classes: {[string]: string},
+type ActionMenuItems = {
+  name: string,
+  handleFunc?: () => void | (() => Promise<void>),
 };
 
-function RenderCell<TRow>({
-  row,
-  rowIdx,
-  column,
-  columnIdx,
-  classes,
-}: RenderCellProps<TRow>) {
-  const commonProps = {
-    classes: classes,
-    columnIdx: columnIdx,
-    cellKey: `${rowIdx}_${columnIdx}`,
-  };
+type ColumnType =
+  | 'boolean'
+  | 'numeric'
+  | 'date'
+  | 'datetime'
+  | 'time'
+  | 'currency';
 
-  if (typeof column.renderFunc === 'function') {
-    return (
-      <CustomCell {...commonProps} value={column.renderFunc(row, classes)} />
-    );
-  } else {
-    /**
-     * Since column.render is the discriminator the ColumnData disjoint union,
-     * getValue needs to be called individually inside each conditional to work
-     * properly. Flow can't know which type getValue will return until after its
-     * type has been speciallized by checking against the column.render
-     * property.
-     */
-    if (column.render === 'severity') {
-      return <SeverityCell {...commonProps} value={column.getValue(row)} />;
-    } else if (column.render === 'multipleGroups') {
-      return <MultiGroupsCell {...commonProps} value={column.getValue(row)} />;
-    } else if (column.render === 'chip') {
-      return <ChipCell {...commonProps} value={column.getValue(row)} />;
-    } else if (column.render === 'labels') {
-      return (
-        <LabelsCell
-          {...commonProps}
-          value={column.getValue(row)}
-          hideFields={column.hideFields}
-        />
-      );
-    } else if (column.render === 'list') {
-      return (
-        <TextCell {...commonProps} value={column.getValue(row).join(', ')} />
-      );
-    } else {
-      return <TextCell {...commonProps} value={column.getValue(row)} />;
-    }
+type ActionTableColumn = {
+  title: string,
+  type?: ColumnType,
+  field: string,
+};
+
+type ActionTableOptions = {
+  actionsColumnIndex: number,
+  pageSize?: number,
+  pageSizeOptions: Array<number>,
+  rowStyle?: {},
+  headerStyle?: {},
+};
+
+type ActionOrderType = {
+  field: string,
+  title: string,
+  tableData: {},
+};
+
+export type ActionFilter = {
+  column: ActionTableColumn,
+  value: string,
+};
+
+export type ActionQuery = {
+  filters: Array<ActionFilter>,
+  orderBy: ActionOrderType,
+  orderDirection: string,
+  page: number,
+  pageSize: number,
+  search: string,
+  totalCount: number,
+};
+
+export type ActionTableProps<T> = {
+  tableRef?: {},
+  toolbar?: {},
+  editable?: {},
+  localization?: {},
+  title?: string,
+  onRowClick?: (T, ?T) => void,
+  columnStruct: Array<ActionTableColumn>,
+  menuItems?: Array<ActionMenuItems>,
+  actions?: Array<{}>,
+  tableData: Array<T> | (ActionQuery => {}),
+  options?: ActionTableOptions,
+  detailPanel?: Array<{}>,
+};
+
+const renderLabelValue = (labelValue: LabelVal) => {
+  if (typeof labelValue === 'boolean') {
+    return labelValue ? 'true' : 'false';
   }
-}
-
-function CustomCell({value}: CellProps<React.Node>) {
-  return (
-    <BodyTableCell>
-      <div>{value}</div>
-    </BodyTableCell>
-  );
-}
+  if (typeof labelValue === 'string' && labelValue.trim() === '') {
+    return null;
+  }
+  return labelValue;
+};
 
 export type CellProps<TValue> = {
   value: TValue,
-  cellKey: string,
-  columnIdx: number,
-  classes: {[string]: string},
 };
-
+type LabelVal = string | number | boolean;
+type Labels = {[string]: LabelVal};
+export function LabelsCell({
+  value,
+}: CellProps<Labels> & {hideFields?: Array<string>}) {
+  const classes = useStyles();
+  const labels = value;
+  return (
+    <div>
+      {Object.keys(labels).map(keyName => {
+        const val = renderLabelValue(labels[keyName]);
+        return (
+          <Chip
+            key={keyName}
+            classes={{label: classes.ellipsisChip}}
+            className={classes.labelChip}
+            label={
+              <span>
+                <em>{keyName}</em>
+                {val !== null && typeof val !== 'undefined' ? '=' : null}
+                {val}
+              </span>
+            }
+            size="small"
+          />
+        );
+      })}
+    </div>
+  );
+}
 type GroupsList = Array<Labels>;
 
-function MultiGroupsCell({value, classes, columnIdx}: CellProps<GroupsList>) {
+export function MultiGroupsCell({value}: CellProps<GroupsList>) {
+  const classes = useStyles();
   return (
-    <BodyTableCell>
+    <>
       {value.map((cellValue, idx) => (
-        <div
-          key={idx}
-          className={
-            columnIdx === 0 ? classes.titleCell : classes.secondaryCell
-          }>
+        <div key={idx}>
           {Object.keys(cellValue).map(keyName => (
             <Chip
               key={keyName}
@@ -169,219 +177,110 @@ function MultiGroupsCell({value, classes, columnIdx}: CellProps<GroupsList>) {
           ))}
         </div>
       ))}
-    </BodyTableCell>
+    </>
   );
 }
 
-const renderLabelValue = (labelValue: LabelVal) => {
-  if (typeof labelValue === 'boolean') {
-    return labelValue ? 'true' : 'false';
-  }
-  if (typeof labelValue === 'string' && labelValue.trim() === '') {
-    return null;
-  }
-  return labelValue;
+const tableIcons = {
+  Add: forwardRef((props, ref) => <AddBox {...props} ref={ref} />),
+  Check: forwardRef((props, ref) => <Check {...props} ref={ref} />),
+
+  Clear: forwardRef((props, ref) => <Clear {...props} ref={ref} />),
+  Edit: forwardRef((props, ref) => <Edit {...props} ref={ref} />),
+  Delete: forwardRef((props, ref) => <DeleteOutline {...props} ref={ref} />),
+
+  Export: forwardRef((props, ref) => <SaveAlt {...props} ref={ref} />),
+  FirstPage: forwardRef((props, ref) => <FirstPage {...props} ref={ref} />),
+  LastPage: forwardRef((props, ref) => <LastPage {...props} ref={ref} />),
+  NextPage: forwardRef((props, ref) => <ChevronRight {...props} ref={ref} />),
+  PreviousPage: forwardRef((props, ref) => (
+    <ChevronLeft {...props} ref={ref} />
+  )),
+  ResetSearch: forwardRef((props, ref) => <Clear {...props} ref={ref} />),
+  Retry: forwardRef((props, ref) => <RefreshIcon {...props} ref={ref} />),
+  Search: forwardRef((props, ref) => <Search {...props} ref={ref} />),
+  SortArrow: forwardRef((props, ref) => <ArrowDownward {...props} ref={ref} />),
+  ThirdStateCheck: forwardRef((props, ref) => <Remove {...props} ref={ref} />),
+  Filter: forwardRef((props, ref) => <FilterList {...props} ref={ref} />),
 };
 
-type LabelVal = string | number | boolean;
-type Labels = {[string]: LabelVal};
-function LabelsCell({
-  value,
-  classes,
-  columnIdx,
-  hideFields,
-}: CellProps<Labels> & {hideFields?: Array<string>}) {
-  const labels = React.useMemo(() => {
-    if (!hideFields) {
-      return value;
+export default function SimpleTable<T>(props: ActionTableProps<T>) {
+  const {columnStruct, tableData, onRowClick} = props;
+  const actionTableJSX = [];
+  const [anchorEl, setAnchorEl] = useState(null);
+  const handleClick = (event, row: T) => {
+    setAnchorEl(event.currentTarget);
+    if (props.onRowClick) {
+      props.onRowClick(row);
     }
-    const filtered: Labels = {...value};
-    // filter out all keys which are in the hideFields list
-    hideFields.forEach(key => delete filtered[key]);
-    return filtered;
-  }, [value, hideFields]);
-  return (
-    <BodyTableCell>
-      <div
-        className={columnIdx === 0 ? classes.titleCell : classes.secondaryCell}>
-        {Object.keys(labels).map(keyName => {
-          const val = renderLabelValue(labels[keyName]);
-          return (
-            <Chip
-              key={keyName}
-              classes={{label: classes.ellipsisChip}}
-              className={classes.labelChip}
-              label={
-                <span>
-                  <em>{keyName}</em>
-                  {val !== null && typeof val !== 'undefined' ? '=' : null}
-                  {val}
-                </span>
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  if (props.menuItems) {
+    // Actions menu
+    const menuItems: Array<ActionMenuItems> = props.menuItems;
+    actionTableJSX.push(
+      <Menu
+        key="menu"
+        id="actions-menu"
+        data-testid="actions-menu"
+        anchorEl={anchorEl}
+        keepMounted
+        open={Boolean(anchorEl)}
+        onClose={handleClose}>
+        {menuItems.map(item => (
+          <MenuItem
+            key={item.name}
+            onClick={() => {
+              if (item.handleFunc) {
+                item.handleFunc();
               }
-              size="small"
-            />
-          );
-        })}
-      </div>
-    </BodyTableCell>
-  );
-}
-
-function TextCell({value, classes, columnIdx}: CellProps<string>) {
-  return (
-    <BodyTableCell>
-      <div
-        className={columnIdx === 0 ? classes.titleCell : classes.secondaryCell}>
-        {value}
-      </div>
-    </BodyTableCell>
-  );
-}
-
-function SeverityCell({value}: CellProps<string>) {
-  return (
-    <BodyTableCell>
-      <SeverityIndicator severity={value} />
-    </BodyTableCell>
-  );
-}
-
-function ChipCell({value, classes}: CellProps<string>) {
-  return (
-    <BodyTableCell>
-      {value && (
-        <Chip
-          classes={{outlinedPrimary: classes.secondaryChip}}
-          label={value.toUpperCase()}
-          color="primary"
-          variant="outlined"
-          data-chip={value} // for testing
-        />
-      )}
-    </BodyTableCell>
-  );
-}
-
-type CommonColumnProps<TRow> = {|
-  title: string,
-  // DEPRECATED - use getValue instead
-  path?: Array<string>,
-  hideFields?: Array<string>,
-  renderFunc?: (tableRow: TRow, classes: {[string]: string}) => React.Node,
-  tooltip?: React.Node,
-|};
-
-// build up a disjoint union to handle all the renderer types
-export type ColumnData<TRow> =
-  | {
-      getValue: (row: TRow) => Array<Labels>,
-      render: 'multipleGroups',
-      ...CommonColumnProps<TRow>,
-    }
-  | {
-      getValue: (row: TRow) => Labels,
-      render: 'labels',
-      ...CommonColumnProps<TRow>,
-    }
-  | {
-      getValue: (row: TRow) => string,
-      render?: '' | 'chip',
-      ...CommonColumnProps<TRow>,
-    }
-  | {
-      getValue: (row: TRow) => string,
-      render: 'severity',
-      ...CommonColumnProps<TRow>,
-    }
-  | {
-      getValue: (row: TRow) => string,
-      render: 'date',
-      ...CommonColumnProps<TRow>,
-    }
-  | {
-      getValue: (row: TRow) => Array<string>,
-      render: 'list',
-      ...CommonColumnProps<TRow>,
-    };
-
-type Props<TRow> = {
-  columnStruct: Array<ColumnData<TRow>>,
-  tableData: Array<TRow>,
-  onActionsClick?: (row: TRow, target: HTMLElement) => void,
-  onRowClick?: (row: TRow, index: number) => void,
-  sortFunc?: (row1: TRow, row2: TRow) => number,
-};
-
-export default function SimpleTable<T>(props: Props<T>) {
-  const classes = useStyles();
-  const {
-    columnStruct,
-    tableData,
-    onActionsClick,
-    onRowClick,
-    sortFunc: _sortFunc,
-    ...extraProps
-  } = props;
-
-  const data = tableData || [];
-
-  const rows = data.map((row: T, rowIdx: number) => {
-    const rowKey = JSON.stringify(row || {});
-    return (
-      <TableRow
-        hover={!!onRowClick}
-        classes={{
-          root: !!onRowClick ? classes.selectableRowHover : undefined,
-        }}
-        className={rowIdx % 2 ? classes.lightRow : classes.darkRow}
-        key={rowKey}
-        onClick={e => {
-          e.stopPropagation();
-          if (onRowClick) {
-            onRowClick(row, rowIdx);
-          }
-        }}>
-        {columnStruct.map((column, columnIdx) => (
-          <RenderCell
-            row={row}
-            rowIdx={rowIdx}
-            column={column}
-            columnIdx={columnIdx}
-            classes={classes}
-            key={`${rowIdx}_${columnIdx}`}
-          />
+              handleClose();
+            }}>
+            {item.name}
+          </MenuItem>
         ))}
-
-        {onActionsClick && (
-          <BodyTableCell>
-            <Button
-              onClick={event => {
-                event.stopPropagation();
-                onActionsClick(row, event.target);
-              }}
-              data-testid="action-menu"
-              aria-label="Action Menu">
-              <MoreVertIcon color="action" />
-            </Button>
-          </BodyTableCell>
-        )}
-      </TableRow>
+      </Menu>,
     );
-  });
+  }
 
   return (
-    <Paper {...extraProps} elevation={1}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            {columnStruct.map((column, idx) => (
-              <HeadTableCell key={'row' + idx}>{column.title}</HeadTableCell>
-            ))}
-          </TableRow>
-        </TableHead>
-        <TableBody>{rows}</TableBody>
-      </Table>
-    </Paper>
+    <>
+      {actionTableJSX}
+      <MaterialTable
+        columns={columnStruct}
+        data={tableData || []}
+        icons={tableIcons}
+        onRowClick={(event, rowData) =>
+          onRowClick ? onRowClick(rowData, rowData.tableData.id) : null
+        }
+        actions={
+          props.menuItems?.length
+            ? [
+                ...(props.actions ? props.actions : []),
+                {
+                  icon: () => <MoreVertIcon />,
+                  tooltip: 'Actions',
+                  onClick: handleClick,
+                },
+              ]
+            : props.actions
+        }
+        options={{
+          actionsColumnIndex: -1,
+          filtering: true,
+          // hide table title and toolbar
+          toolbar: false,
+        }}
+        localization={{
+          // hide 'Actions' in table header
+          header: {actions: ''},
+        }}
+      />
+    </>
   );
 }
 
