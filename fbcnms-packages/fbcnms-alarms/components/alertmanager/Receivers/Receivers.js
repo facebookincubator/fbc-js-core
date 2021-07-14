@@ -17,7 +17,7 @@ import Grid from '@material-ui/core/Grid';
 import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
 import SettingsIcon from '@material-ui/icons/Settings';
-import SimpleTable from '../../table/SimpleTable';
+import SimpleTable, {LabelsCell} from '../../table/SimpleTable';
 import TableActionDialog from '../../table/TableActionDialog';
 import TableAddButton from '../../table/TableAddButton';
 import {makeStyles} from '@material-ui/styles';
@@ -54,14 +54,6 @@ export default function Receivers() {
   const networkId = useNetworkId();
   const classes = useStyles();
   const snackbars = useSnackbars();
-  const handleActionsMenuOpen = React.useCallback(
-    (row: AlertReceiver, eventTarget: HTMLElement) => {
-      setSelectedRow(row);
-      menuAnchorEl.current = eventTarget;
-      setIsMenuOpen(true);
-    },
-    [menuAnchorEl, setIsMenuOpen, setSelectedRow],
-  );
 
   const handleActionsMenuClose = React.useCallback(() => {
     setSelectedRow(null);
@@ -161,21 +153,41 @@ export default function Receivers() {
         </Grid>
       )}
       <Grid item>
-        <SimpleTable
-          tableData={receiversData}
-          onActionsClick={handleActionsMenuOpen}
-          columnStruct={[
-            {
-              title: 'name',
-              getValue: row => row.name,
-            },
-            {
-              title: 'notifications',
-              render: 'labels',
-              getValue: getNotificationsSummary,
-            },
-          ]}
-        />
+        <>
+          <SimpleTable
+            onRowClick={row => setSelectedRow(row)}
+            columnStruct={[
+              {
+                title: 'name',
+                field: 'name',
+              },
+              {
+                title: 'notifications',
+                field: 'labels',
+                render: row => {
+                  const labels = getNotificationsSummary(row);
+                  return <LabelsCell value={labels} />;
+                },
+              },
+            ]}
+            tableData={receiversData}
+            data-testid="receiver"
+            menuItems={[
+              {
+                name: 'View',
+                handleFunc: () => handleViewDialogOpen(),
+              },
+              {
+                name: 'Edit',
+                handleFunc: () => handleEdit(),
+              },
+              {
+                name: 'Delete',
+                handleFunc: () => handleDelete(),
+              },
+            ]}
+          />
+        </>
       </Grid>
       {isLoading && receiversData.length === 0 && (
         <div className={classes.loading}>
@@ -205,7 +217,6 @@ export default function Receivers() {
           setIsNewReceiver(true);
           setIsAddEditReceiver(true);
           setSelectedRow(null);
-          setIsMenuOpen(false);
         }}
         data-testid="add-receiver-button"
       />

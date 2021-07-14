@@ -109,15 +109,16 @@ test('clicking the "edit" button in the table menu opens AddEditAlert for that a
     isLoading: false,
   };
   useLoadRulesMock.mockReturnValueOnce(resp);
-  const {getByText, getByLabelText} = render(
+  const {getByText, getByLabelText, getAllByTitle} = render(
     <AlarmsWrapper>
       <AlertRules />
     </AlarmsWrapper>,
   );
 
-  // open the table row menu
+  const actionMenu = getAllByTitle('Actions');
+  expect(actionMenu[0]).toBeInTheDocument();
   act(() => {
-    fireEvent.click(getByLabelText(/action menu/i));
+    fireEvent.click(actionMenu[0]);
   });
   // click the edit buton
   act(() => {
